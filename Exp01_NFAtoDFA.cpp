@@ -131,7 +131,6 @@ FA FA::NFAtoDFA(){
         if(!temp.empty())
             temp_sigma[temp_sigma2] = temp;
     }
-    std::vector<char> F_temp;
 
     bool inCircle = true;
     while(inCircle){ //直到没有新的状态集合产生
@@ -149,30 +148,57 @@ FA FA::NFAtoDFA(){
     }
 
     DFA.Sigma = temp_sigma;
-    DFA.F = F_temp;
+    DFA.F = F;
     return DFA;
 }
 
 void FA::outputDFA(){
-    std::cout << "Q: 状态集";
-    for(int i = 0; i < Q.size(); i++)
-        std::cout << Q[i] << " ";
+    std::cout << "Q: 状态集 ";
+    std::set<std::set<char>> temp_Q;
+    for(auto it = Sigma.begin(); it != Sigma.end(); it++)
+        temp_Q.insert(it->first.pre);
+    for(auto it = temp_Q.begin(); it != temp_Q.end(); it++){
+        std::cout << "{";
+        for(auto it2 = it->begin(); it2 != it->end(); it2++)
+            std::cout << " " << *it2;
+        std::cout << " } ";
+    }
     std::cout << std::endl;
-    std::cout << "T: 字母表" << T << std::endl;
+    std::cout << "T: 字母表 " << T << std::endl;
     std::cout << "Sigma: 转移函数" << std::endl;
     for(auto it = Sigma.begin(); it != Sigma.end(); it++){
         std::cout << "转移前状态: ";
+        std::cout << "{";
         for(auto it2 = it->first.pre.begin(); it2 != it->first.pre.end(); it2++)
-            std::cout << *it2 << " ";
-        std::cout << "输入: " << it->first.input << " 转移后状态: ";
+            std::cout << " " << *it2;
+        std::cout << " } \t";
+        std::cout << "输入: " << it->first.input << "\t 转移后状态: ";
+        std::cout << "{";
         for(auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-            std::cout << *it2 << " ";
+            std::cout << " " << *it2;
+        std::cout << " } ";
         std::cout << std::endl;
     }
-    std::cout << "q0: 初始状态" << q0 << std::endl;
-    std::cout << "F: 终态集";
-    for(int i = 0; i < F.size(); i++)
-        std::cout << F[i] << " ";
+    std::cout << "q0: 初始状态 " << q0 << std::endl;
+    std::cout << "F: 终态集 ";
+    std::set<std::set<char>> temp_F;
+    for(auto it = Sigma.begin(); it != Sigma.end(); it++){
+        bool notIncludeF = true;
+        for(auto it2 = it->first.pre.begin(); it2 != it->first.pre.end(); it2++){
+            if(findChar(F,*it2))
+                notIncludeF = false;
+        }
+        if(notIncludeF)
+            continue;
+        else
+            temp_F.insert(it->first.pre);
+    }
+    for(auto it = temp_F.begin(); it != temp_F.end(); it++){
+        std::cout << "{";
+        for(auto it2 = it->begin(); it2 != it->end(); it2++)
+            std::cout << " " << *it2;
+        std::cout << " } ";
+    }
     std::cout << std::endl;
     return;
 }
