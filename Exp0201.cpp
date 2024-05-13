@@ -8,7 +8,7 @@ class G {
 private:
     std::set<std::string> N;
     std::set<char> T;
-    std::map<std::string, std::vector<std::string>> P;
+    std::map<std::string, std::set<std::vector<std::string>>> P; //单个string表示终结符或非终结符；vector<string>表示单个生成式右侧；set表示多个生成式
     inline void input_P();
     std::string S;
 public:
@@ -52,7 +52,7 @@ void G::input(){
 }
 
 inline void G::input_P(){
-    std::cout << "请输入产生式集合 P: " << std::endl;
+    std::cout << "请输入产生式集合 P:  // 使用#表示Epsilon空串" << std::endl;
     std::string left;
     std::vector<std::string> right;
     char c;
@@ -71,7 +71,13 @@ inline void G::input_P(){
         else if(state == 1){
             if(c == '\n'){
                 state = 0;
-                P[left] = right;
+                if(P.find(left) == P.end()){
+                    std::set<std::vector<std::string>> temp;
+                    temp.insert(right);
+                    P[left] = temp;
+                }
+                else
+                    P[left].insert(right);
                 left.clear();
             }
             else{
@@ -114,8 +120,12 @@ void G::output(){
     std::cout << "  生成式\t P = { ";
     for(auto it = P.begin(); it != P.end(); it++){
         std::cout << it->first << " -> ";
-        for(int i = 0; i < it->second.size(); i++){
-            std::cout << it->second[i];
+        for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+            for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
+                std::cout << *ittt;
+            }
+            if(itt != --it->second.end())
+                std::cout << " | ";
         }
         if(it != --P.end())
             std::cout << ", ";
