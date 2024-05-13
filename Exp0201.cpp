@@ -172,24 +172,46 @@ void G::erase_single_gener(){
 
 void G::erase_unreachable(){
     std::set<std::string> N1 = Algo_1(T);
+    std::set<std::string> T_str;
+    for(auto it = T.begin(); it != T.end(); it++){
+        T_str.insert(std::string(1, *it));
+    }
     this->N = N1;
     for(auto it = P.begin(); it != P.end(); it++){
         if(!is_in_set(N1, it->first)){
-            P.erase(it);
-            it--;
+            if(it != P.begin()){
+                it = P.erase(it);
+                it--;
+            }
+            else{
+                P.erase(it);
+                it = P.begin();
+            }
         }
         else{
             for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
                 for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
-                    if(!is_in_set(N1, *ittt)){
-                        it->second.erase(itt);
-                        itt--;
+                    if(!is_in_set(OR_set(N1, T_str), *ittt)){
+                        if(itt != it->second.begin()){
+                            itt = it->second.erase(itt);
+                            itt--;
+                        }
+                        else{
+                            it->second.erase(itt);
+                            itt = it->second.begin();
+                        }
                         break;
                     }
                 }
                 if(itt == it->second.end()){
-                    P.erase(it);
-                    it--;
+                    if(it != P.begin()){
+                        it = P.erase(it);
+                        it--;
+                    }
+                    else{
+                        P.erase(it);
+                        it = P.begin();
+                    }
                     break;
                 }
             }
