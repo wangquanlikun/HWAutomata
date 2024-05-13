@@ -4,6 +4,14 @@
 #include <map>
 #include <set>
 
+bool is_in_set(std::set<std::string> set, std::string str){
+    auto it = set.find(str);
+    if(it != set.end())
+        return true;
+    else
+        return false;
+}
+
 class G {
 private:
     std::set<std::string> N;
@@ -11,6 +19,9 @@ private:
     std::map<std::string, std::set<std::vector<std::string>>> P; //单个string表示终结符或非终结符；vector<string>表示单个生成式右侧；set表示多个生成式
     inline void input_P();
     std::string S;
+
+    std::set<std::string> Algo_1(std::set<char> reachable_set);
+    std::set<std::string> Algo_2(); //找出有用符号
 public:
     void input();
     void erase_epsilon();
@@ -89,6 +100,18 @@ inline void G::input_P(){
     }
 }
 
+std::set<std::string> G::Algo_1(std::set<char> reachable_set) {
+    std::set<std::string> N0;
+    std::set<std::string> N_;
+    
+    while(N0 != N_){
+        N0 = N_;
+    }
+    return N_;
+}
+
+std::set<std::string> G::Algo_2() {}
+
 void G::erase_epsilon(){
 
 }
@@ -98,7 +121,32 @@ void G::erase_single_gener(){
 }
 
 void G::erase_unreachable(){
+    std::set<std::string> N1 = Algo_1(T);
+    this->N = N1;
+    for(auto it = P.begin(); it != P.end(); it++){
+        if(!is_in_set(N1, it->first)){
+            P.erase(it);
+            it--;
+        }
+        else{
+            for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+                for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
+                    if(!is_in_set(N1, *ittt)){
+                        it->second.erase(itt);
+                        itt--;
+                        break;
+                    }
+                }
+                if(itt == it->second.end()){
+                    P.erase(it);
+                    it--;
+                    break;
+                }
+            }
+        }
+    }
 
+    std::set<std::string> N2 = Algo_2();
 }
 
 void G::output(){
