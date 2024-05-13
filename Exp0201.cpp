@@ -12,6 +12,23 @@ bool is_in_set(std::set<std::string> set, std::string str){
         return false;
 }
 
+bool include(std::vector<std::string> unend_symbol, std::set<std::string> set){ // if set_1 /in (set)*
+    for(auto it = unend_symbol.begin(); it != unend_symbol.end(); it++){
+        if(!is_in_set(set, *it))
+            return false;
+    }
+    return true;
+}
+
+std::set<std::string> AND_set (std::set<std::string> set_1, std::set<std::string> set_2){
+    std::set<std::string> temp;
+    for(auto it = set_1.begin(); it != set_1.end(); it++){
+        if(is_in_set(set_2, *it))
+            temp.insert(*it);
+    }
+    return temp;
+}
+
 class G {
 private:
     std::set<std::string> N;
@@ -104,8 +121,30 @@ std::set<std::string> G::Algo_1(std::set<char> reachable_set) {
     std::set<std::string> N0;
     std::set<std::string> N_;
     
+    std::set<std::string> temp;
+    for(auto it = reachable_set.begin(); it != reachable_set.end(); it++){
+        temp.insert(std::string(1, *it));
+    }
+
+    for(auto it = P.begin(); it != P.end(); it++){
+        for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+            if(include(*itt, temp)){
+                N_.insert(it->first);
+                break;
+            }
+        }
+    }
     while(N0 != N_){
         N0 = N_;
+        temp = AND_set(N_, temp);
+        for(auto it = P.begin(); it != P.end(); it++){
+            for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+                if(include(*itt, temp)){
+                    N_.insert(it->first);
+                    break;
+                }
+            }
+        }
     }
     return N_;
 }
