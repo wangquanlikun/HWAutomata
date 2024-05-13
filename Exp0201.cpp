@@ -20,6 +20,17 @@ bool include(std::vector<std::string> unend_symbol, std::set<std::string> set){ 
     return true;
 }
 
+std::set<std::string> OR_set (std::set<std::string> set_1, std::set<std::string> set_2){
+    std::set<std::string> temp;
+    for(auto it = set_1.begin(); it != set_1.end(); it++){
+        temp.insert(*it);
+    }
+    for(auto it = set_2.begin(); it != set_2.end(); it++){
+        temp.insert(*it);
+    }
+    return temp;
+}
+
 std::set<std::string> AND_set (std::set<std::string> set_1, std::set<std::string> set_2){
     std::set<std::string> temp;
     for(auto it = set_1.begin(); it != set_1.end(); it++){
@@ -136,7 +147,7 @@ std::set<std::string> G::Algo_1(std::set<char> reachable_set) {
     }
     while(N0 != N_){
         N0 = N_;
-        temp = AND_set(N_, temp);
+        temp = OR_set(N_, temp);
         for(auto it = P.begin(); it != P.end(); it++){
             for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
                 if(include(*itt, temp)){
