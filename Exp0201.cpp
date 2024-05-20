@@ -49,7 +49,7 @@ private:
     std::string S;
 
     std::set<std::string> Algo_1(std::set<char> reachable_set);
-    std::set<std::string> Algo_2(); //找出有用符号
+    void Algo_2();
     void generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result);
 public:
     void input();
@@ -161,7 +161,66 @@ std::set<std::string> G::Algo_1(std::set<char> reachable_set) {
     return N_;
 }
 
-std::set<std::string> G::Algo_2() {}
+void G::Algo_2() {
+    std::map <std::string, std::set<std::vector<std::string>>> P1;
+    std::set<std::string> T_str;
+    for (auto it = T.begin(); it != T.end(); it++) {
+        T_str.insert(std::string(1, *it));
+    }
+
+    //创建一个容纳能由可达字符的产生式得到的字符集合
+    std::set<std::string> P_right;
+    //创建一个可达集合
+    std::set <std::string> N0;
+    //将起始符S加入到集合P_right中
+    P_right.insert(S);
+
+
+    //得到一个包含了所有可达符号的可达集合N0
+    while (!P_right.empty()) {//一直循环至集合P_right为空
+        std::string qhead;
+        qhead.append(*P_right.begin());
+        P_right.erase(qhead);
+        if (is_in_set(N0, qhead))//如果可达集合里已经有从P_right中取出的首元素，则直接进入下一个循环
+            continue;
+        N0.insert(qhead);
+        if (is_in_set(T_str, qhead))//如果该元素为终结符，则直接进入下一个循环
+            continue;
+        //进行遍历,把能由该元素的产生式推导得到的所有符号加入到P_right中
+        for (auto Pvector : P[qhead])
+            for (int i = 0; i < Pvector.size(); i++) {
+                P_right.insert(Pvector[i]);
+            }
+
+    }
+
+
+    //完成新文法中N1与T1的构建
+    N = AND_set(N, N0);
+    T_str = AND_set(T_str, N0);
+
+    //完成新文法中P1的构建
+    for (auto Nstring : N)//对可达非终结符的产生式进行遍历
+        for (auto Pvector : P[Nstring]) {
+            int i = 1;
+            for (auto Pstring : Pvector) {
+                if (!is_in_set(N0, Pstring)) {//如果该产生式产生了不可达符号，则置辅助符号i为0,防止新文法中出现该产生式
+                    i = 0;
+                    break;
+                }
+            }
+            if (i)
+                P1[Nstring].insert(Pvector);//将不出现不可达符号的产生式加入到新文法
+        }
+
+    P = P1;
+    std::set<char> T_char;
+    for (auto it = T.begin(); it != T.end(); it++) {
+        if (is_in_set(T_str, std::string(1, *it)))
+            T_char.insert(*it);
+    }
+    T = T_char;
+}
 
 void G::erase_epsilon(){
     std::set<char> nullset = {'#'};
@@ -244,7 +303,54 @@ void G::generateReplacements(std::set<std::string> N_, std::string s, int index,
 }
 
 void G::erase_single_gener(){
-
+    std::map<std::string ,std::set<std::string>> N_SET;
+    for (auto A : N) {
+        std::set<std::string> N0 = { A };
+        while (true) {
+            std::set<std::string> N1 = N0;
+            for (auto it = N0.begin(); it != N0.end(); it++) {
+                for (auto itt = P[*it].begin(); itt != P[*it].end(); itt++) {
+                    if (itt->size() == 1 && N.find((*itt)[0]) != N.end()) {
+                        N1.insert((*itt)[0]);
+                    }
+                }
+            }
+            if (N0 == N1)
+                break;
+            N0 = N1;
+        }
+        N_SET[A] = N0;
+    }
+    for (auto it : N_SET) {
+        //debug
+        std::cout << it.first << " : ";
+        for (auto itt : it.second) {
+            std::cout << itt << " ";
+        }
+        for (auto itt : it.second) {
+            if (itt != it.first) {
+                for (auto ittt = P[itt].begin(); ittt != P[itt].end(); ittt++) {
+                    if (ittt->size() == 1 && N.find((*ittt)[0]) != N.end())
+                        continue;
+                    P[it.first].insert(*ittt);
+                }
+            }
+        }
+    }
+    for (auto it = P.begin(); it != P.end(); it++) {
+        for (auto itt = it->second.begin(); itt != it->second.end(); itt++) {
+            if (itt->size() == 1 && N.find((*itt)[0]) != N.end()) {
+                if (itt != it->second.begin()) {
+                    itt = it->second.erase(itt);
+                    itt--;
+                }
+                else {
+                    it->second.erase(itt);
+                    itt = it->second.begin();
+                }
+            }
+        }
+    }
 }
 
 void G::erase_unreachable(){
@@ -295,7 +401,7 @@ void G::erase_unreachable(){
         }
     }
 
-    std::set<std::string> N2 = Algo_2();
+    Algo_2();
 }
 
 void G::output(){
