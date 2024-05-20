@@ -50,6 +50,7 @@ private:
 
     std::set<std::string> Algo_1(std::set<char> reachable_set);
     std::set<std::string> Algo_2(); //找出有用符号
+    void generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result);
 public:
     void input();
     void erase_epsilon();
@@ -163,7 +164,83 @@ std::set<std::string> G::Algo_1(std::set<char> reachable_set) {
 std::set<std::string> G::Algo_2() {}
 
 void G::erase_epsilon(){
+    std::set<char> nullset = {'#'};
+    std::set<std::string> N_ = Algo_1(nullset);//调用过算法1后已经找到的能够到达Epsilon的非终结符
+    std::map<std::string, std::set<std::vector<std::string>>> P_;//需要生成的P
+    std::string left;
+    std::vector<std::string> right;
+    //对N_中每个非终结符进行遍历，对其所有生成式进行遍历，若生成式中包含N_中的非终结符，则将其轮流替换为Epsilon，直接消去，数目先0个，再1个，直到生成式中不再包含N_中的非终结符，并把替换后的生成式加入P_
+    //注意，生成式右边不能完全为Epsilon，即不能出现A->#的情况
+    for(auto it = N_.begin(); it != N_.end(); it++){
+        for(auto itt = P[*it].begin(); itt != P[*it].end(); itt++){
+            int count = 0;
+            for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
+                if(N_.find(*ittt) != N_.end()){
+                    count++;
+                }
+            }
+            if(count == 0){
+                if(itt->size() == 1 && (*itt)[0] == "#"){
+                    continue;
+                }
+                else{
+                    P_[*it].insert(*itt);
+                }
+            }
+            else{
+                if(itt->size() == 1)
+                    P_[*it].insert(*itt);//生成式右边只有一个非终结符，且为N_中的非终结符，直接加入P_
+                else{
+                    std::vector<std::string> temp;
+                    std::string s;
+                    std::string replaced_s;
+                    for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
+                        s += *ittt;
+                    }
+                    generateReplacements(N_, s, 0, temp);
+                    for(auto ittt = temp.begin(); ittt != temp.end(); ittt++){
+                        for(auto itttt = ittt->begin(); itttt != ittt->end(); itttt++){
+                            if(*itttt != '#')
+                                replaced_s += *itttt;
+                        }
+                        if(replaced_s != "")
+                            right.push_back(replaced_s);
+                    }
+                    P_[*it].insert(right);
+                }
+            }
+        }
+    }
 
+    //若起始符能够推导出Epsilon，即N_中包含S，则需要添加一个新的起始符S1，S1->S|Epsilon
+    if(N_.find(S) != N_.end()){
+        left = S + "1";
+        N_.insert(left);
+        right.push_back(S);
+        right.push_back("#");
+        P_[left].insert(right);
+    }
+}
+
+void G::generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result) {
+    // 如果当前索引已经到了字符串末尾，将当前字符串加入结果集中
+    if (index == s.size()) {
+        result.push_back(s);
+        return;
+    }
+    // 如果当前字符属于N_集合，则生成两个分支，一个是替换成 '#'，一个是不替换
+    if (N_.find(s.substr(index, 1)) != N_.end()) {
+        // 替换成 '#'
+        std::string replaced_s = s;
+        replaced_s[index] = '#';
+        generateReplacements(N_, replaced_s, index + 1, result);
+        // 不替换
+        generateReplacements(N_, s, index + 1, result);
+    }
+    // 如果当前字符不属于，直接跳到下一个字符
+    else {
+        generateReplacements(N_, s, index + 1, result);
+    }
 }
 
 void G::erase_single_gener(){
