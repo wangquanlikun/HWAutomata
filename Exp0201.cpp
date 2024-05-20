@@ -63,7 +63,9 @@ int main() {
     G g;
     g.input();
     g.erase_epsilon();
+    g.output();
     g.erase_single_gener();
+    g.output();
     g.erase_unreachable();
     g.output();
     return 0;
@@ -191,7 +193,6 @@ void G::Algo_2() {
             for (int i = 0; i < Pvector.size(); i++) {
                 P_right.insert(Pvector[i]);
             }
-
     }
 
 
@@ -228,9 +229,9 @@ void G::erase_epsilon(){
     std::map<std::string, std::set<std::vector<std::string>>> P_;//需要生成的P
     std::string left;
     std::vector<std::string> right;
-    //对N_中每个非终结符进行遍历，对其所有生成式进行遍历，若生成式中包含N_中的非终结符，则将其轮流替换为Epsilon，直接消去，数目先0个，再1个，直到生成式中不再包含N_中的非终结符，并把替换后的生成式加入P_
+    //对N中每个非终结符进行遍历，对其所有生成式进行遍历，若生成式中包含N_中的非终结符，则将其轮流替换为Epsilon，直接消去，数目先0个，再1个，直到生成式中不再包含N_中的非终结符，并把替换后的生成式加入P_
     //注意，生成式右边不能完全为Epsilon，即不能出现A->#的情况
-    for(auto it = N_.begin(); it != N_.end(); it++){
+    for(auto it = N.begin(); it != N.end(); it++){
         for(auto itt = P[*it].begin(); itt != P[*it].end(); itt++){
             int count = 0;
             for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
@@ -252,20 +253,23 @@ void G::erase_epsilon(){
                 else{
                     std::vector<std::string> temp;
                     std::string s;
-                    std::string replaced_s;
+                    
                     for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
                         s += *ittt;
                     }
                     generateReplacements(N_, s, 0, temp);
                     for(auto ittt = temp.begin(); ittt != temp.end(); ittt++){
+                        std::string replaced_s;
+                        right.clear();
                         for(auto itttt = ittt->begin(); itttt != ittt->end(); itttt++){
                             if(*itttt != '#')
                                 replaced_s += *itttt;
                         }
                         if(replaced_s != "")
                             right.push_back(replaced_s);
+                        P_[*it].insert(right);
                     }
-                    P_[*it].insert(right);
+                    
                 }
             }
         }
@@ -279,6 +283,7 @@ void G::erase_epsilon(){
         right.push_back("#");
         P_[left].insert(right);
     }
+    P = P_;
 }
 
 void G::generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result) {
@@ -436,3 +441,27 @@ void G::output(){
     std::cout << " }" << std::endl;
     std::cout << "  起始符\t S = " << S << std::endl;
 }
+
+/* 测试数据集
+5
+S
+A
+B
+C
+D
+4
+a
+b
+c
+d
+S
+S-a
+S-bA
+S-B
+S-ccD
+A-abB
+A-#
+B-aA
+C-ddC
+D-ddd
+*/
