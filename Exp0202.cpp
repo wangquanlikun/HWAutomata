@@ -42,20 +42,29 @@ std::set<std::string> AND_set (std::set<std::string> set_1, std::set<std::string
 
 class G {
 private:
+    std::set<std::string> Algo_1(std::set<char> reachable_set);
+    void Algo_2();
+    void generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result);
+public:
     std::set<std::string> N;
     std::set<char> T;
     std::map<std::string, std::set<std::vector<std::string>>> P; //单个string表示终结符或非终结符；vector<string>表示单个生成式右侧；set表示多个生成式
     std::string S;
 
-    std::set<std::string> Algo_1(std::set<char> reachable_set);
-    void Algo_2();
-    void generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result);
-public:
+    G();
+    void insert_P(std::string left, std::vector<std::string> right);
     void erase_epsilon();
     void erase_single_gener();
     void erase_unreachable();
     void output();
 }; //文法
+
+G::G(){
+    this->N.clear();
+    this->T.clear();
+    this->P.clear();
+    this->S.clear();
+}
 
 std::set<std::string> G::Algo_1(std::set<char> reachable_set) {
     std::set<std::string> N0;
@@ -368,6 +377,18 @@ void G::output(){
     std::cout << "  起始符\t S = " << S << std::endl;
 }
 
+void G::insert_P(std::string left, std::vector<std::string> right){
+    if(P.find(left) == P.end()){
+        std::set<std::vector<std::string>> temp_set;
+        temp_set.insert(right);
+        P[left] = temp_set;
+    }
+    else{
+        P[left].insert(right);
+    }
+}
+
+
 class PDA{
     private:
         std::set<std::string> Q; //状态集合
@@ -438,7 +459,48 @@ inline void PDA::input_delta(){ //转移函数输入格式为：状态 输入符
     }
 }
 
-G PDA::to_CFG(){}
+G PDA::to_CFG(){
+    G CFG;
+    CFG.T = this->T;
+    CFG.T.insert('#');
+    CFG.S = "S";
+    std::set<std::string> new_N;
+    for(auto it_1 = this->Q.begin(); it_1 != this->Q.end(); it_1++){
+        for(auto it_2 = this->Q.begin(); it_2 != this->Q.end(); it_2++){
+            for(auto it_3 = this->Z.begin(); it_3 != this->Z.end(); it_3++){
+                std::string temp_N = "[" + *it_1 + "," + *it_3 + "," + *it_2 + "]";
+                new_N.insert(temp_N);
+            }
+        }
+    }
+    new_N.insert("S");
+    CFG.N = new_N;
+
+    std::set<std::vector<std::string>> temp_set;
+    for(auto it_1 = this->Q.begin(); it_1 != this->Q.end(); it_1++){
+        std::string temp_str = "[" + this->q0 + "," + this->Z0 + "," + *it_1 + "]";
+        std::vector<std::string> temp_vector;
+        temp_vector.push_back(temp_str);
+        temp_set.insert(temp_vector);
+    }
+    CFG.P[CFG.S] = temp_set;
+
+
+
+
+    for(auto it = this->delta.begin(); it != this->delta.end(); it++){
+        for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+            if(itt->second == "#"){
+                std::string left = "[" + std::get<0>(it->first)  + "," + std::get<2>(it->first) + "," + itt->first + "]";
+                std::vector<std::string> right;
+                right.push_back(std::string(1, std::get<1>(it->first)));
+                CFG.insert_P(left, right);
+            }
+        }
+    }
+    
+    return CFG;
+}
 
 int main(){
     PDA pda;
@@ -464,7 +526,25 @@ q0
 q0 b & q0 B&
 q0 b B q0 BB
 q0 a B q1 #
-q1 a B q1 #0
+q1 a B q1 #
 q1 # B q1 #
+q1 # & q1 #
+*/
+
+/*
+2
+q0 q1
+2
+a b
+2
+A &
+q0
+&
+0
+q0 a & q0 A&
+q0 a A q0 AA
+q0 b A q1 #
+q1 b A q1 #
+q1 # A q1 #
 q1 # & q1 #
 */
