@@ -4,6 +4,8 @@
 #include <set>
 #include <map>
 
+#define _DEBUG 0
+
 bool is_in_set(std::set<std::string> set, std::string str){
     auto it = set.find(str);
     if(it != set.end())
@@ -44,7 +46,7 @@ class G {
 private:
     std::set<std::string> Algo_1(std::set<char> reachable_set);
     void Algo_2();
-    void generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result);
+    void generateReplacements(std::set<std::string> N_, std::vector<std::string> vec, int index, std::vector<std::vector<std::string>>& result);
 public:
     std::set<std::string> N;
     std::set<char> T;
@@ -186,22 +188,25 @@ void G::erase_epsilon(){
                 if(itt->size() == 1)
                     P_[*it].insert(*itt);//生成式右边只有一个非终结符，且为N_中的非终结符，直接加入P_
                 else{
-                    std::vector<std::string> temp;
+                    std::vector<std::vector<std::string>> temp;
                     std::string s;
                     
                     for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
                         s += *ittt;
                     }
-                    generateReplacements(N_, s, 0, temp);
+                    generateReplacements(N_, *itt, 0, temp);
+
                     for(auto ittt = temp.begin(); ittt != temp.end(); ittt++){
                         std::string replaced_s;
                         right.clear();
                         for(auto itttt = ittt->begin(); itttt != ittt->end(); itttt++){
-                            if(*itttt != '#')
+                            if(*itttt != "#")
                                 replaced_s += *itttt;
+                            if(replaced_s != ""){
+                                right.push_back(replaced_s);
+                                replaced_s.clear();
+                            }
                         }
-                        if(replaced_s != "")
-                            right.push_back(replaced_s);
                         P_[*it].insert(right);
                     }
                     
@@ -221,24 +226,25 @@ void G::erase_epsilon(){
     P = P_;
 }
 
-void G::generateReplacements(std::set<std::string> N_, std::string s, int index, std::vector<std::string>& result) {
-    // 如果当前索引已经到了字符串末尾，将当前字符串加入结果集中
-    if (index == s.size()) {
-        result.push_back(s);
+
+void G::generateReplacements(std::set<std::string> N_, std::vector<std::string> vec, int index, std::vector<std::vector<std::string>>& result) {
+    // 如果当前索引已经到了向量末尾，将当前向量加入结果集中
+    if (index == vec.size()) {
+        result.push_back(vec);
         return;
     }
-    // 如果当前字符属于N_集合，则生成两个分支，一个是替换成 '#'，一个是不替换
-    if (N_.find(s.substr(index, 1)) != N_.end()) {
+    // 如果当前元素属于N_集合，则生成两个分支，一个是替换成 '#'，一个是不替换
+    if (N_.find(vec[index]) != N_.end()) {
         // 替换成 '#'
-        std::string replaced_s = s;
-        replaced_s[index] = '#';
-        generateReplacements(N_, replaced_s, index + 1, result);
+        std::vector<std::string> replaced_vec = vec;
+        replaced_vec[index] = "#";
+        generateReplacements(N_, replaced_vec, index + 1, result);
         // 不替换
-        generateReplacements(N_, s, index + 1, result);
+        generateReplacements(N_, vec, index + 1, result);
     }
-    // 如果当前字符不属于，直接跳到下一个字符
+    // 如果当前元素不属于，直接跳到下一个元素
     else {
-        generateReplacements(N_, s, index + 1, result);
+        generateReplacements(N_, vec, index + 1, result);
     }
 }
 
@@ -249,6 +255,8 @@ void G::erase_single_gener(){
         while (true) {
             std::set<std::string> N1 = N0;
             for (auto it = N0.begin(); it != N0.end(); it++) {
+                if (P.find(*it) == P.end()) //如果不跳过，map会生成一个空的set
+                    continue;
                 for (auto itt = P[*it].begin(); itt != P[*it].end(); itt++) {
                     if (itt->size() == 1 && N.find((*itt)[0]) != N.end()) {
                         N1.insert((*itt)[0]);
@@ -261,33 +269,43 @@ void G::erase_single_gener(){
         }
         N_SET[A] = N0;
     }
+
     for (auto it : N_SET) {
-        //debug
-        std::cout << it.first << " : ";
-        for (auto itt : it.second) {
-            std::cout << itt << " ";
+        if (_DEBUG) {
+            std::cout << it.first << " : ";
+            for (auto itt : it.second) {
+                std::cout << itt << " ";
+            }
+            std::cout << '\n';
         }
         for (auto itt : it.second) {
             if (itt != it.first) {
                 for (auto ittt = P[itt].begin(); ittt != P[itt].end(); ittt++) {
-                    if (ittt->size() == 1 && N.find((*ittt)[0]) != N.end())
+                    if (ittt->size() <= 1 && N.find((*ittt)[0]) != N.end())
                         continue;
                     P[it.first].insert(*ittt);
+                    if (_DEBUG){
+                        std::cout << it.first << " -> ";
+                        for (auto itttt : *ittt) {
+                            std::cout << itttt;
+                        }
+                        std::cout << '\n';
+                    }
                 }
             }
         }
     }
+
     for (auto it = P.begin(); it != P.end(); it++) {
-        for (auto itt = it->second.begin(); itt != it->second.end(); itt++) {
-            if (itt->size() == 1 && N.find((*itt)[0]) != N.end()) {
-                if (itt != it->second.begin()) {
-                    itt = it->second.erase(itt);
-                    itt--;
+        for (auto itt = it->second.begin(); itt != it->second.end();) {
+            if (itt->size() <= 1 && N.find((*itt)[0]) != N.end()) {
+                if (_DEBUG){
+                    std::cout<< (*itt)[0] << '\n';
                 }
-                else {
-                    it->second.erase(itt);
-                    itt = it->second.begin();
-                }
+                itt = it->second.erase(itt);
+                
+            } else {
+                itt++;
             }
         }
     }
@@ -300,44 +318,31 @@ void G::erase_unreachable(){
         T_str.insert(std::string(1, *it));
     }
     this->N = N1;
-    for(auto it = P.begin(); it != P.end(); it++){
+    for(auto it = P.begin(); it != P.end(); ){
         if(!is_in_set(N1, it->first)){
-            if(it != P.begin()){
-                it = P.erase(it);
-                it--;
-            }
-            else{
-                P.erase(it);
-                it = P.begin();
-            }
+            it = P.erase(it);
         }
         else{
-            for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+            bool not_erase_it = true;
+            for(auto itt = it->second.begin(); itt != it->second.end(); ){
+                bool not_inclued = false;
                 for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
                     if(!is_in_set(OR_set(N1, T_str), *ittt)){
-                        if(itt != it->second.begin()){
-                            itt = it->second.erase(itt);
-                            itt--;
-                        }
-                        else{
-                            it->second.erase(itt);
-                            itt = it->second.begin();
-                        }
+                        itt = it->second.erase(itt);
+                        not_inclued = true;
                         break;
                     }
                 }
-                if(itt == it->second.end()){
-                    if(it != P.begin()){
-                        it = P.erase(it);
-                        it--;
-                    }
-                    else{
-                        P.erase(it);
-                        it = P.begin();
-                    }
+                if(it->second.begin() == it->second.end()){
+                    it = P.erase(it);
+                    not_erase_it = false;
                     break;
                 }
+                if(!not_inclued)
+                    itt++;
             }
+            if(not_erase_it)
+                it++;
         }
     }
 
@@ -400,6 +405,7 @@ class PDA{
         std::set<std::string> F; //终止状态集合
 
         inline void input_delta();
+        void generate_rules(const std::string& q, char a, char A, const std::string& state, const std::string& r, std::vector<std::string>& right, std::string prev_state, size_t index, G& CFG);
     public:
         void input();
         G to_CFG();
@@ -462,7 +468,6 @@ inline void PDA::input_delta(){ //转移函数输入格式为：状态 输入符
 G PDA::to_CFG(){
     G CFG;
     CFG.T = this->T;
-    CFG.T.insert('#');
     CFG.S = "S";
     std::set<std::string> new_N;
     for(auto it_1 = this->Q.begin(); it_1 != this->Q.end(); it_1++){
@@ -485,8 +490,32 @@ G PDA::to_CFG(){
     }
     CFG.P[CFG.S] = temp_set;
 
+    // 生成PDA到CFG的转换规则
+    for (auto it = this->delta.begin(); it != this->delta.end(); it++) {
+        for (auto itt = it->second.begin(); itt != it->second.end(); itt++) {
+            // 提取转换规则 (q, a, A) -> (p, BC...)
+            std::string q = std::get<0>(it->first);
+            char a = std::get<1>(it->first);
+            char A = std::get<2>(it->first);
+            std::string state = itt->second;
 
+            if (state.size() != 1) {
+                // (q, a, A) -> (p, BC...)
+                for (auto r : this->Q) {
+                    // 只生成S能生成的left非终结符
+                    std::string left = "[" + q + "," + A + "," + r + "]";
+                        std::vector<std::string> right;
+                        if (a != '#') {
+                            right.push_back(std::string(1, a));
+                        }
 
+                        std::string prev_state = q;
+                        generate_rules(q, a, A, state, r, right, prev_state, 0, CFG);
+
+                }
+            }
+        }
+    }
 
     for(auto it = this->delta.begin(); it != this->delta.end(); it++){
         for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
@@ -498,22 +527,55 @@ G PDA::to_CFG(){
             }
         }
     }
-    
+    // 处理终态规则
+    for(auto qf : this->F){
+        for(auto A : this->Z){
+            std::string left = "[" + qf + "," + A + "," + qf + "]";
+            CFG.P[left].insert({""});
+        }
+    }
     return CFG;
+}
+
+
+void PDA::generate_rules(const std::string& q, char a, char A, const std::string& state, const std::string& r, std::vector<std::string>& right, std::string prev_state, size_t index, G& CFG) {
+    if (index == state.size()) {
+        std::string left = "[" + q + "," + A + "," + r + "]";
+        CFG.P[left].insert(right);
+        return;
+    }
+
+    char current_symbol = state[index];
+    if (index < state.size() - 1) {
+        for (auto s : this->Q) {
+            std::vector<std::string> new_right = right;
+            std::string temp = "[" + prev_state + "," + current_symbol + "," + s + "]";
+            new_right.push_back(temp);
+            generate_rules(q, a, A, state, r, new_right, s, index + 1, CFG);
+        }
+    } else {
+        std::string next_state = r;
+        std::string temp = "[" + prev_state + "," + current_symbol + "," + next_state + "]";
+        right.push_back(temp);
+        generate_rules(q, a, A, state, r, right, next_state, index + 1, CFG);
+    }
 }
 
 int main(){
     PDA pda;
     pda.input();
     G cfg = pda.to_CFG();
+    cfg.output();
     cfg.erase_epsilon();
+    cfg.output();
     cfg.erase_single_gener();
+    cfg.output();
     cfg.erase_unreachable();
     cfg.output();
     return 0;
 }
 
-/*输入格式
+/*输入格式 -- 这是实验报告要求的版本
 2
 q0 q1
 2
@@ -531,7 +593,7 @@ q1 # B q1 #
 q1 # & q1 #
 */
 
-/*
+/*书上P124例3数据
 2
 q0 q1
 2

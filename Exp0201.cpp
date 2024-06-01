@@ -264,9 +264,11 @@ void G::erase_epsilon(){
                         for(auto itttt = ittt->begin(); itttt != ittt->end(); itttt++){
                             if(*itttt != '#')
                                 replaced_s += *itttt;
+                            if(replaced_s != ""){
+                                right.push_back(replaced_s);
+                                replaced_s.clear();
+                            }
                         }
-                        if(replaced_s != "")
-                            right.push_back(replaced_s);
                         P_[*it].insert(right);
                     }
                     
@@ -327,11 +329,12 @@ void G::erase_single_gener(){
         N_SET[A] = N0;
     }
     for (auto it : N_SET) {
-        //debug
+        #ifdef DEBUG
         std::cout << it.first << " : ";
         for (auto itt : it.second) {
             std::cout << itt << " ";
         }
+        #endif
         for (auto itt : it.second) {
             if (itt != it.first) {
                 for (auto ittt = P[itt].begin(); ittt != P[itt].end(); ittt++) {
@@ -365,44 +368,31 @@ void G::erase_unreachable(){
         T_str.insert(std::string(1, *it));
     }
     this->N = N1;
-    for(auto it = P.begin(); it != P.end(); it++){
+    for(auto it = P.begin(); it != P.end(); ){
         if(!is_in_set(N1, it->first)){
-            if(it != P.begin()){
-                it = P.erase(it);
-                it--;
-            }
-            else{
-                P.erase(it);
-                it = P.begin();
-            }
+            it = P.erase(it);
         }
         else{
-            for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
+            bool not_erase_it = true;
+            for(auto itt = it->second.begin(); itt != it->second.end(); ){
+                bool not_inclued = false;
                 for(auto ittt = itt->begin(); ittt != itt->end(); ittt++){
                     if(!is_in_set(OR_set(N1, T_str), *ittt)){
-                        if(itt != it->second.begin()){
-                            itt = it->second.erase(itt);
-                            itt--;
-                        }
-                        else{
-                            it->second.erase(itt);
-                            itt = it->second.begin();
-                        }
+                        itt = it->second.erase(itt);
+                        not_inclued = true;
                         break;
                     }
                 }
-                if(itt == it->second.end()){
-                    if(it != P.begin()){
-                        it = P.erase(it);
-                        it--;
-                    }
-                    else{
-                        P.erase(it);
-                        it = P.begin();
-                    }
+                if(it->second.begin() == it->second.end()){
+                    it = P.erase(it);
+                    not_erase_it = false;
                     break;
                 }
+                if(!not_inclued)
+                    itt++;
             }
+            if(not_erase_it)
+                it++;
         }
     }
 
