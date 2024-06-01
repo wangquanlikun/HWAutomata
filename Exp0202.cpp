@@ -513,17 +513,19 @@ G PDA::to_CFG(){
                         generate_rules(q, a, A, state, r, right, prev_state, 0, CFG);
 
                 }
-            }
-        }
-    }
-
-    for(auto it = this->delta.begin(); it != this->delta.end(); it++){
-        for(auto itt = it->second.begin(); itt != it->second.end(); itt++){
-            if(itt->second == "#"){
-                std::string left = "[" + std::get<0>(it->first)  + "," + std::get<2>(it->first) + "," + itt->first + "]";
-                std::vector<std::string> right;
-                right.push_back(std::string(1, std::get<1>(it->first)));
-                CFG.insert_P(left, right);
+            } else {
+                if(itt->second == "#"){
+                    std::string left = "[" + q  + "," + A + "," + itt->first + "]";
+                    std::vector<std::string> right;
+                    right.push_back(std::string(1, a));
+                    CFG.insert_P(left, right);
+                } else {
+                    std::string left = "[" + q  + "," + A + "," + itt->first + "]";
+                    std::vector<std::string> right;
+                    right.push_back(std::string(1, a));
+                    right.push_back("[" + q  + "," + A + "," + itt->first + "]");
+                    CFG.insert_P(left, right);
+                }
             }
         }
     }
